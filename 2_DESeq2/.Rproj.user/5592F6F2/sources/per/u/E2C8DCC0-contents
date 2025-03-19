@@ -1,0 +1,54 @@
+# Install and load plotly if necessary
+if (!require("plotly")) install.packages("plotly", dependencies = TRUE)
+library(plotly)
+
+# Define the non-linear surface function for AUDPC:
+# This function is constructed so that:
+# - When LDT is high (max) and Lag is minimal, AUDPC is high.
+# - When LDT is low and Lag is long, AUDPC is low.
+surface_fun <- function(LDT, Lag) {
+  10 + 20 * (((LDT - 5) / 10)^(1/3)) * (((7 - Lag) / 4)^(1/3))
+}
+
+# Define grid ranges for LDT and Lag (for example, LDT from 5 to 15 and Lag from 3 to 7)
+LDT_values <- seq(5, 15, length.out = 50)
+lag_values <- seq(3, 7, length.out = 50)
+
+# Create a matrix of AUDPC values over the grid
+AUDPC_matrix <- outer(LDT_values, lag_values, FUN = function(x, y) surface_fun(x, y))
+
+# Define the four clear samples (as discussed)
+clear_samples <- data.frame(
+  Sample = c("Sample1", "Sample2", "Sample3", "Sample4"),
+  LDT = c(10, 10, 8, 12),
+  Lag = c(4, 6, 5, 5),
+  AUDPC = c(25, 20, 22, 18)
+)
+
+# Create the interactive 3D plot using plotly:
+# - The surface represents the modeled non-linear relationship.
+# - The red markers are the four clear samples.
+p <- plot_ly() %>%
+  add_surface(x = ~LDT_values, 
+              y = ~lag_values, 
+              z = ~AUDPC_matrix,
+              colorscale = "Viridis",
+              opacity = 0.8,
+              name = "Modeled Surface") %>%
+  add_markers(data = clear_samples,
+              x = ~LDT, 
+              y = ~Lag, 
+              z = ~AUDPC,
+              marker = list(size = 8, color = "red"),
+              text = ~Sample,
+              textposition = "top center",
+              name = "Clear Samples") %>%
+  layout(title = "3D Surface: AUDPC ~ f(LDT, Lag)",
+         scene = list(
+           xaxis = list(title = "LDT"),
+           yaxis = list(title = "Lag"),
+           zaxis = list(title = "AUDPC")
+         ))
+
+# Display the interactive plot
+p

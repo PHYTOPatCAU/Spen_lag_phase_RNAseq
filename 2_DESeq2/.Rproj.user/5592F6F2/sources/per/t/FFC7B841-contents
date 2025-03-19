@@ -1,0 +1,182 @@
+rm(list=ls())
+library(tidyverse)
+library(ComplexHeatmap)
+library(circlize)
+
+# Get IDs of the focal DEGs
+focal_degs <-  c("Sopen02g011350")
+# Load Expression Data of each Mock (VST and pre-filtered)
+
+data_1282 <- read.csv("C:/Users/suaph281/Desktop/nesh_local/spen_lag_phase_rnaseq/vst_counts_filtered_1282.csv") %>% 
+  #filter(grepl("_pdb_mock_24hpi", X)) %>% 
+  column_to_rownames(var = "X") %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  filter(rownames(.) %in% focal_degs) %>% 
+  rownames_to_column(var = "GeneID")
+
+data_1809 <- read.csv("C:/Users/suaph281/Desktop/nesh_local/spen_lag_phase_rnaseq/vst_counts_filtered_1809.csv") %>% 
+  #filter(grepl("_pdb_mock_24hpi", X)) %>% 
+  column_to_rownames(var = "X") %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  filter(rownames(.) %in% focal_degs)%>% 
+  rownames_to_column(var = "GeneID")
+
+data_1941 <- read.csv("C:/Users/suaph281/Desktop/nesh_local/spen_lag_phase_rnaseq/vst_counts_filtered_1941.csv") %>% 
+  #filter(grepl("_pdb_mock_24hpi", X)) %>% 
+  column_to_rownames(var = "X") %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  filter(rownames(.) %in% focal_degs)%>% 
+  rownames_to_column(var = "GeneID")
+
+
+data_1282_mako <- data_1282 %>% 
+  pivot_longer(cols = -GeneID, names_to = "Sample", values_to = "Expression") %>% 
+  mutate(
+    genotype = "LA1282",
+    # Extract the last two digits before "hpi" for timepoint
+    timepoint = sub(".*_(\\d{2})hpi$", "\\1", Sample),
+    # Identify and label the inoculum
+    inoculum = case_when(
+      grepl("pdb_mock", Sample) ~ "pdb_mock",
+      grepl("ss", Sample)       ~ "ss",
+      TRUE                      ~ NA_character_
+    )
+  ) %>% 
+  group_by(genotype,timepoint, inoculum) %>% 
+  summarise(expression=mean(Expression))
+
+
+data_1809_mako <- data_1809 %>% 
+  pivot_longer(cols = -GeneID, names_to = "Sample", values_to = "Expression") %>% 
+  mutate(
+    genotype = "LA1809",
+    # Extract the last two digits before "hpi" for timepoint
+    timepoint = sub(".*_(\\d{2})hpi$", "\\1", Sample),
+    # Identify and label the inoculum
+    inoculum = case_when(
+      grepl("pdb_mock", Sample) ~ "pdb_mock",
+      grepl("ss", Sample)       ~ "ss",
+      TRUE                      ~ NA_character_
+    )
+  ) %>% 
+  group_by(genotype,timepoint, inoculum) %>% 
+  summarise(expression=mean(Expression))
+
+data_1941_mako <- data_1941 %>% 
+  pivot_longer(cols = -GeneID, names_to = "Sample", values_to = "Expression") %>% 
+  mutate(
+    genotype = "LA1941",
+    # Extract the last two digits before "hpi" for timepoint
+    timepoint = sub(".*_(\\d{2})hpi$", "\\1", Sample),
+    # Identify and label the inoculum
+    inoculum = case_when(
+      grepl("pdb_mock", Sample) ~ "pdb_mock",
+      grepl("ss", Sample)       ~ "ss",
+      TRUE                      ~ NA_character_
+    )
+  ) %>% 
+  group_by(genotype, timepoint, inoculum) %>% 
+  summarise(expression=mean(Expression))
+
+
+merged <- data_1282_mako %>% 
+  bind_rows(data_1809_mako) %>%
+  bind_rows(data_1941_mako) 
+  
+
+# Combine into a single data frame
+heatmap_matrix_ss <- merged %>% 
+  filter(inoculum=="ss")%>%
+  select(-inoculum) %>% 
+  pivot_wider(names_from=timepoint, values_from=expression) %>%
+  column_to_rownames(var = "genotype") %>%
+  as.matrix()
+
+
+###
+# ---- Normalize the Whole Dataframe (Global Min-Max Normalization) ----
+normalize_minmax_global <- function(x) {
+  min_val <- min(x)
+  max_val <- max(x)
+  (x - min_val) / (max_val - min_val)
+}
+
+normalized_matrix_global <- normalize_minmax_global(heatmap_matrix)
+
+
+
+heatmap <- Heatmap(
+  heatmap_matrix_ss, 
+  name                = "Variance-Stabilized Counts",
+  cluster_rows        = TRUE,
+  cluster_columns     = FALSE,
+  show_row_names      = TRUE,
+  show_column_names   = TRUE,
+  col = colorRamp2(
+    breaks = c(1, 2,3,4, 
+               5,6,7),
+    colors = c("#000000",  "#191205", "#32240a",
+               "#aa7b22","#c68f28", "#e3a42d", "#ffb833")),
+  
+  row_dend_width      = unit(.5, "cm"),
+  column_dend_height  = unit(.5, "cm"),
+  row_names_gp        = gpar(fontsize = 8),
+  width               = ncol(heatmap_matrix_ss) * unit(5, "mm"),
+  height              = nrow(heatmap_matrix_ss) * unit(3, "mm"),
+  column_title        = "Infected",
+  rect_gp             = gpar(col = "black", lwd = 2)
+)
+
+
+draw(heatmap)
+
+
+
+heatmap_matrix <- merged %>% 
+  filter(inoculum=="pdb_mock")%>%
+  select(-inoculum) %>% 
+  pivot_wider(names_from=timepoint, values_from=expression) %>%
+  column_to_rownames(var = "genotype") %>%
+  as.matrix()
+
+#normalized_matrix_global_mock <- normalize_minmax_global(heatmap_matrix)
+
+
+heatmap2 <- Heatmap(heatmap_matrix, 
+                   name = "Variance-Stabilized Counts",
+                   cluster_rows = TRUE, 
+                   cluster_columns = F, 
+                   show_row_names = TRUE, 
+                   show_column_names = TRUE,
+                   #col                 = col_fun,  
+                   #col = colorRamp2(c(min(merged$expression), mean(merged$expression), max(merged$expression)), c("blue", "white", "red")),
+                   col = colorRamp2(
+                     breaks = c(1, 2,3,4, 
+                                5,6,7),
+                     colors = c("#000000",  "#191205", "#32240a",
+                                "#aa7b22","#c68f28", "#e3a42d", "#ffb833")),
+                   
+                   row_dend_width = unit(.5, "cm"),
+                   column_dend_height = unit(.5, "cm"),
+                   row_names_gp = grid::gpar(fontsize = 8),
+                   width             = ncol(heatmap_matrix_ss) * unit(5, "mm"),
+                   height            = nrow(heatmap_matrix_ss) * unit(3, "mm"),
+                   column_title         = "Mock",
+                   #name              = "log2FC \nOG0009560",
+                   #col               = col_fun3,
+                   #row_dend_width    = unit(1, "cm"),
+                   rect_gp           = gpar(col = "black", lwd = 2),)
+
+draw(heatmap2)
+
+heatmap + heatmap2
+png(paste0("C:/Users/suaph281/Nextcloud/ResiDEvo/sequencing_2/figures/fig_5/", Sys.Date(), 
+           "_basal_regulation_WRKY6.png"),
+    width=5, height=3, units="in", res=900)
+
+# Draw the heatmap
+heatmap + heatmap2
+dev.off()

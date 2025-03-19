@@ -1,0 +1,27 @@
+{
+    "id": "73542998",
+    "path": "C:/Users/suaph281/Desktop/GitLab/spen_lag_phase_rnaseq/code/DESeq2/8_focal_DEGs_counts_time.R",
+    "project_path": "8_focal_DEGs_counts_time.R",
+    "type": "r_source",
+    "hash": "3198094506",
+    "contents": "",
+    "dirty": false,
+    "created": 1740047183058.0,
+    "source_on_save": false,
+    "relative_order": 31,
+    "properties": {
+        "tempName": "Untitled4",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "91,39",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1741081016,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1741081016502,
+    "read_only": false,
+    "read_only_alternatives": []
+}

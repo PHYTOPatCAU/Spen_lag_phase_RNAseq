@@ -1,0 +1,34 @@
+
+TF_DEGS_mock_genotype <- read.csv("C:/Users/suaph281/Desktop/nesh_local/spen_lag_phase_rnaseq/DeSeq/expr_contrasts_genotypes_mock.csv") %>% 
+  filter(Contrast =="LA1282_vs_LA1809_24" & padj < 0.05 & abs(log2FoldChange) > 1) %>% 
+  left_join(read.csv("C:/Users/suaph281/Desktop/GitLab/spen_lag_phase_rnaseq/data/spen_TFs.txt"), by=c("GeneID"="gene")) %>% 
+  filter(V2 != "NA")
+
+
+DEGS_mock_genotype <- read.csv("C:/Users/suaph281/Desktop/nesh_local/spen_lag_phase_rnaseq/DeSeq/expr_contrasts_genotypes_mock.csv") %>% 
+  filter(Contrast =="LA1282_vs_LA1809_24" & padj < 0.05 & abs(log2FoldChange) > 1)
+
+degs_48hpi <- read.csv("C:/Users/suaph281/Desktop/nesh_local/spen_lag_phase_rnaseq/DeSeq/expr_dat_1282_inf_mock.csv",
+                     row.name=1) %>% 
+  filter(timepoint=="48hpi" & abs(log2FoldChange) > 1 & padj < 0.05)
+
+overlap_genes <- intersect(DEGS_mock_genotype$GeneID, degs_48hpi$GeneID)
+cat("Number of overlapping DEGs between 0h and 48h:", length(overlap_genes), "\n Of ", length(degs_48hpi$GeneID), "DEGs at 48h, ")
+# Total number of genes in the dataset (update this based on your full gene set)
+
+
+tf_0h_degs <- intersect(DEGS_mock_genotype$GeneID, TF_DEGS_mock_genotype$GeneID)
+
+cat("Number of TFs differentially expressed at 0h:", length(tf_0h_degs), "\n")
+
+# How many TFs in 48 hpi DEGs?
+
+tf_48hpidegs <- read.csv("C:/Users/suaph281/Desktop/nesh_local/spen_lag_phase_rnaseq/DeSeq/expr_dat_1282_inf_mock.csv",
+                                       row.name=1) %>% 
+  filter(timepoint=="48hpi" & abs(log2FoldChange) > 1 & padj < 0.05 &GeneID %in% read.csv("C:/Users/suaph281/Desktop/GitLab/spen_lag_phase_rnaseq/data/spen_TFs.txt")$gene)
+  
+length(tf_48hpidegs$GeneID)
+
+TF_overlap <- intersect(tf_0h_degs, tf_48hpidegs$GeneID)
+
+length(TF_overlap)

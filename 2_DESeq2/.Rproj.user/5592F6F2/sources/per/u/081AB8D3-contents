@@ -1,0 +1,134 @@
+# Visualize the RLPs, RLKs and PTI genes in mock conditions between the genotypes
+# counts 
+# three genotypes 
+
+rm(list=ls())
+library(tidyverse)
+library(ComplexHeatmap)
+library(circlize)
+
+# Get IDs of the focal DEGs
+
+pti_genes <- data.frame(
+  gene = c("cerk1.1", "cerk1.2", "cerk1.3", "pepr1", "bak.1","bak.2", "bak.3",
+           "lyk3", "lyk4", "lym1", "sobir1.1", "sobir1.2"),
+  GeneID=c("Sopen02g025710", "Sopen02g025720", "Sopen07g025160", "Sopen03g041600",
+           "Sopen01g047490", "Sopen04g028770", "Sopen10g017310", "Sopen03g039880",
+           "Sopen02g034600", "Sopen11g007610", "Sopen03g030890", "Sopen06g028100")
+)
+
+crps <- read.table("C:/Users/suaph281/Desktop/nesh_local/spen_lag_phase_rnaseq/rlps/Solpeni_CRPs.txt") %>% 
+  mutate(GeneID = sub("\\.1$", "", V1)) %>% 
+  mutate(GeneID = sub("\\.2$", "", GeneID)) %>% 
+  select(GeneID) %>% 
+  mutate(gene="cRLP")
+
+clks <- read.table("C:/Users/suaph281/Desktop/nesh_local/spen_lag_phase_rnaseq/rlps/solpeni_kinase.txt") %>% 
+  mutate(GeneID = sub("\\.1$", "", V1)) %>% 
+  mutate(GeneID = sub("\\.2$", "", GeneID)) %>% 
+  select(GeneID) %>% 
+  unique() %>% 
+  mutate(gene="RLK")
+
+
+focal_degs <- pti_genes %>% 
+  bind_rows(crps) %>%
+  bind_rows(clks) 
+  
+# Load Expression Data of each Mock (VST and pre-filtered)
+
+data_1282 <- read.csv("C:/Users/suaph281/Desktop/nesh_local/spen_lag_phase_rnaseq/vst_counts_filtered_1282.csv") %>% 
+  filter(grepl("_pdb_mock_24hpi", X)) %>% 
+  column_to_rownames(var = "X") %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  filter(rownames(.) %in% focal_degs$GeneID) %>% 
+  rownames_to_column(var = "GeneID")
+
+data_1809 <- read.csv("C:/Users/suaph281/Desktop/nesh_local/spen_lag_phase_rnaseq/vst_counts_filtered_1809.csv") %>% 
+  filter(grepl("_pdb_mock_24hpi", X)) %>% 
+  column_to_rownames(var = "X") %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  filter(rownames(.) %in% focal_degs$GeneID)%>% 
+  rownames_to_column(var = "GeneID")
+
+data_1941 <- read.csv("C:/Users/suaph281/Desktop/nesh_local/spen_lag_phase_rnaseq/vst_counts_filtered_1941.csv") %>% 
+  filter(grepl("_pdb_mock_24hpi", X)) %>% 
+  column_to_rownames(var = "X") %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  filter(rownames(.) %in% focal_degs$GeneID)%>% 
+  rownames_to_column(var = "GeneID")
+
+
+# ---- 1. Calculate Mean Expression Per Genotype ----
+mean_1282 <- data_1282 %>% column_to_rownames("GeneID") %>% mutate(mean_1282=rowMeans(.)) %>% select(mean_1282) %>% rownames_to_column(var = "GeneID") 
+mean_1809 <- data_1809 %>% column_to_rownames("GeneID") %>% mutate(mean_1809=rowMeans(.)) %>% select(mean_1809) %>% rownames_to_column(var = "GeneID")
+mean_1941 <- data_1941 %>% column_to_rownames("GeneID") %>% mutate(mean_1941=rowMeans(.)) %>% select(mean_1941) %>% rownames_to_column(var = "GeneID")
+
+all_genes <- unique(
+  c(mean_1282$GeneID, mean_1809$GeneID, mean_1941$GeneID)
+)
+
+# Combine into a single data frame
+heatmap_matrix <- data.frame(GeneID=all_genes) %>% 
+  left_join(mean_1282, by="GeneID") %>%
+  left_join(mean_1809, by="GeneID") %>%
+  left_join(mean_1941, by="GeneID") %>%
+  select(-GeneID) %>%
+  as.matrix()
+
+
+
+heatmap_matrix[is.na(heatmap_matrix)] <- 0
+
+
+###
+# ---- Normalize the Whole Dataframe (Global Min-Max Normalization) ----
+normalize_minmax_global <- function(x) {
+  min_val <- min(x)
+  max_val <- max(x)
+  (x - min_val) / (max_val - min_val)
+}
+
+normalized_matrix_global <- normalize_minmax_global(heatmap_matrix)
+
+
+
+
+
+
+
+heatmap <- Heatmap(normalized_matrix_global, 
+                   name = "Expression",
+                   cluster_rows = TRUE, 
+                   cluster_columns = TRUE, 
+                   show_row_names = TRUE, 
+                   show_column_names = TRUE,
+                   #col = colorRamp2(c(min(data_1282), mean(data_1282), max(data_1282)), c("blue", "white", "red")),
+                   row_dend_width = unit(.5, "cm"),
+                   column_dend_height = unit(.5, "cm"),
+                   row_names_gp = grid::gpar(fontsize = 8),
+                   width             = ncol(normalized_matrix_global) * unit(5, "mm"),
+                   height            = nrow(normalized_matrix_global) * unit(3, "mm"),
+                   #row_title         = "",
+                   #name              = "log2FC \nOG0009560",
+                   #col               = col_fun3,
+                   #row_dend_width    = unit(1, "cm"),
+                   rect_gp           = gpar(col = "black", lwd = 2),)
+
+#svg(paste0("C:/Users/suaph281/Nextcloud/ResiDEvo/sequencing_2/figures/fig_5/", Sys.Date(), 
+#           "_basal_regulation_focal_genes.svg"),
+#    width=6, height=10)
+# Draw the heatmap
+draw(heatmap)
+dev.off()
+
+
+png(paste0("C:/Users/suaph281/Nextcloud/ResiDEvo/sequencing_2/figures/fig_5/", Sys.Date(), 
+           "_basal_regulation_focal_genes.png"),
+    width=6, height=10, units="in", res=900)
+# Draw the heatmap
+draw(heatmap)
+dev.off()

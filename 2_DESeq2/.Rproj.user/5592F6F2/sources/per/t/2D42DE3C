@@ -1,0 +1,27 @@
+{
+    "id": "2D42DE3C",
+    "path": "C:/Users/suaph281/Desktop/GitLab/spen_lag_phase_rnaseq/code/DESeq2/4_GSEA_72hpi_all_genotypes.R",
+    "project_path": "4_GSEA_72hpi_all_genotypes.R",
+    "type": "r_source",
+    "hash": "834334354",
+    "contents": "",
+    "dirty": false,
+    "created": 1740046039426.0,
+    "source_on_save": false,
+    "relative_order": 31,
+    "properties": {
+        "tempName": "Untitled3",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "52,0",
+        "scrollLine": "47"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1741080903,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1741080904025,
+    "read_only": false,
+    "read_only_alternatives": []
+}
